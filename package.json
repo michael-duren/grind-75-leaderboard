@@ -26,6 +26,14 @@
     "react-dom": "^19.2.7",
     "tailwindcss": "^4.3.1"
   },
+  "overrides": {
+    "esbuild": "0.28.1",
+    "yaml": "2.9.0",
+    "@opentelemetry/core": "2.8.0",
+    "@opentelemetry/resources": "2.8.0",
+    "@opentelemetry/sdk-trace-base": "2.8.0",
+    "@opentelemetry/sdk-trace-node": "2.8.0"
+  },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@eslint/js": "^10.0.1",
