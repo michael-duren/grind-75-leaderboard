@@ -69,7 +69,9 @@ export async function destroySession(token: string | undefined): Promise<void> {
 /** Cookie options shared by login/logout so they stay in sync. */
 export const sessionCookieOptions = {
   httpOnly: true,
-  secure: true,
+  // Secure in production (HTTPS); relaxed for local http so login works under
+  // `netlify dev` / `astro dev`.
+  secure: import.meta.env.PROD,
   sameSite: 'lax' as const,
   path: '/',
   maxAge: SESSION_TTL_DAYS * 24 * 60 * 60,
