@@ -1,0 +1,61 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+export const prerender = false;
+
+// Already signed in? Skip the form.
+if (Astro.locals.user) {
+  return Astro.redirect('/dashboard');
+}
+
+const error = Astro.url.searchParams.get('error');
+const message = error === 'invalid' ? 'Wrong username or password.' : null;
+---
+
+<Layout title="Log in">
+  <div class="mx-auto max-w-sm">
+    <h1 class="font-mono text-2xl font-bold text-ink">Log in</h1>
+    <p class="mt-1 text-sm text-muted">Welcome back. Time to climb.</p>
+
+    {
+      message && (
+        <p class="mt-4 rounded border border-hard/40 bg-hard/10 px-3 py-2 font-mono text-sm text-hard">
+          {message}
+        </p>
+      )
+    }
+
+    <form method="POST" action="/api/login" class="mt-6 space-y-4">
+      <label class="block">
+        <span class="font-mono text-xs uppercase tracking-wider text-muted">Username</span>
+        <input
+          name="username"
+          type="text"
+          required
+          autocomplete="username"
+          class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+        />
+      </label>
+      <label class="block">
+        <span class="font-mono text-xs uppercase tracking-wider text-muted">Password</span>
+        <input
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+          class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+        />
+      </label>
+      <button
+        type="submit"
+        class="w-full cursor-pointer rounded border border-phosphor/50 bg-phosphor/10 px-4 py-2 font-mono font-semibold text-phosphor hover:bg-phosphor/20"
+      >
+        Log in →
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-muted">
+      No account? <a href="/register">Sign up</a>
+    </p>
+  </div>
+</Layout>

@@ -1,0 +1,126 @@
+import { sql } from './db';
+import { rankUsers, type RankableUser, type RankedUser, type Difficulty } from './scoring';
+
+/**
+ * Tiny in-process cache. The leaderboard is read on every homepage hit but
+ * changes rarely, so a short TTL avoids hammering the DB without adding infra.
+ * (Serverless functions are short-lived, so this is best-effort per instance —
+ * exactly what the "low traffic, don't over-engineer" brief calls for.)
+ */
+const CACHE_TTL_MS = 15_000;
+const cache = new Map<string, { value: unknown; expires: number }>();
+
+async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const hit = cache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value as T;
+  const value = await load();
+  cache.set(key, { value, expires: Date.now() + CACHE_TTL_MS });
+  return value;
+}
+
+/** Drop cached leaderboard data after a write (e.g. a problem toggle). */
+export function invalidateLeaderboard(): void {
+  cache.delete('leaderboard');
+}
+
+export interface LeaderboardData {
+  users: RankedUser[];
+  totalProblems: number;
+  totalPoints: number;
+}
+
+export async function getLeaderboard(): Promise<LeaderboardData> {
+  return cached('leaderboard', async () => {
+    const [totals] = (await sql`
+      SELECT COUNT(*)::int AS total_problems,
+             COALESCE(SUM(points), 0)::int AS total_points
+      FROM problems
+    `) as Array<{ total_problems: number; total_points: number }>;
+
+    const rows = (await sql`
+      SELECT u.id,
+             u.username,
+             u.leetcode_username,
+             COALESCE(SUM(p.points), 0)::int AS points,
+             COUNT(up.id)::int AS solved,
+             u.completed_at
+      FROM users u
+      LEFT JOIN user_problems up ON up.user_id = u.id
+      LEFT JOIN problems p ON p.id = up.problem_id
+      GROUP BY u.id
+    `) as Array<{
+      id: number;
+      username: string;
+      leetcode_username: string;
+      points: number;
+      solved: number;
+      completed_at: string | null;
+    }>;
+
+    const users: RankableUser[] = rows.map((r) => ({
+      id: r.id,
+      username: r.username,
+      leetcodeUsername: r.leetcode_username,
+      points: r.points,
+      solved: r.solved,
+      completedAt: r.completed_at ? Date.parse(r.completed_at) : null,
+    }));
+
+    return {
+      users: rankUsers(users),
+      totalProblems: totals?.total_problems ?? 0,
+      totalPoints: totals?.total_points ?? 0,
+    };
+  });
+}
+
+export interface ProblemRow {
+  id: number;
+  slug: string;
+  title: string;
+  difficulty: Difficulty;
+  minutes: number;
+  points: number;
+  orderIndex: number;
+  solved: boolean;
+  submissionUrl: string | null;
+}
+
+/** All problems with this user's solve status, ordered for the dashboard grid. */
+export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> {
+  const rows = (await sql`
+    SELECT p.id,
+           p.slug,
+           p.title,
+           p.difficulty,
+           p.minutes,
+           p.points,
+           p.order_index,
+           up.submission_url
+    FROM problems p
+    LEFT JOIN user_problems up
+      ON up.problem_id = p.id AND up.user_id = ${userId}
+    ORDER BY p.order_index
+  `) as Array<{
+    id: number;
+    slug: string;
+    title: string;
+    difficulty: Difficulty;
+    minutes: number;
+    points: number;
+    order_index: number;
+    submission_url: string | null;
+  }>;
+
+  return rows.map((r) => ({
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    difficulty: r.difficulty,
+    minutes: r.minutes,
+    points: r.points,
+    orderIndex: r.order_index,
+    solved: r.submission_url !== null,
+    submissionUrl: r.submission_url,
+  }));
+}

@@ -1,0 +1,28 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProblemGrid from '../components/ProblemGrid.tsx';
+import { getLeaderboard, getProblemsForUser } from '../lib/queries';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+const [problems, { totalPoints }] = await Promise.all([
+  getProblemsForUser(user.id),
+  getLeaderboard(),
+]);
+---
+
+<Layout title="My Progress">
+  <section class="mb-2">
+    <h1 class="font-mono text-2xl font-bold text-ink">My Progress</h1>
+    <p class="mt-1 text-sm text-muted">
+      Solve a problem, paste the submission link as proof, mark it done.
+    </p>
+  </section>
+
+  <ProblemGrid client:load problems={problems} totalPoints={totalPoints} />
+</Layout>

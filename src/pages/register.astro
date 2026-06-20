@@ -1,0 +1,78 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+export const prerender = false;
+
+if (Astro.locals.user) {
+  return Astro.redirect('/dashboard');
+}
+
+const error = Astro.url.searchParams.get('error');
+const message =
+  error === 'taken'
+    ? 'That username is already taken.'
+    : error === 'invalid'
+      ? 'Check your details: username 3–20 chars, password 8+ chars, and a valid LeetCode handle.'
+      : null;
+---
+
+<Layout title="Sign up">
+  <div class="mx-auto max-w-sm">
+    <h1 class="font-mono text-2xl font-bold text-ink">Create account</h1>
+    <p class="mt-1 text-sm text-muted">Pick a name, link your LeetCode, start grinding.</p>
+
+    {
+      message && (
+        <p class="mt-4 rounded border border-hard/40 bg-hard/10 px-3 py-2 font-mono text-sm text-hard">
+          {message}
+        </p>
+      )
+    }
+
+    <form method="POST" action="/api/register" class="mt-6 space-y-4">
+      <label class="block">
+        <span class="font-mono text-xs uppercase tracking-wider text-muted">Username</span>
+        <input
+          name="username"
+          type="text"
+          required
+          minlength="3"
+          maxlength="20"
+          autocomplete="username"
+          class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+        />
+      </label>
+      <label class="block">
+        <span class="font-mono text-xs uppercase tracking-wider text-muted">LeetCode username</span>
+        <input
+          name="leetcode_username"
+          type="text"
+          required
+          autocomplete="off"
+          class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+        />
+      </label>
+      <label class="block">
+        <span class="font-mono text-xs uppercase tracking-wider text-muted">Password</span>
+        <input
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+          class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+        />
+      </label>
+      <button
+        type="submit"
+        class="w-full cursor-pointer rounded border border-phosphor/50 bg-phosphor/10 px-4 py-2 font-mono font-semibold text-phosphor hover:bg-phosphor/20"
+      >
+        Create account →
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-muted">
+      Already have one? <a href="/login">Log in</a>
+    </p>
+  </div>
+</Layout>

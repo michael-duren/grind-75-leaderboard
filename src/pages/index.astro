@@ -1,11 +1,102 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import { getLeaderboard } from '../lib/queries';
+import { ordinal } from '../lib/scoring';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+export const prerender = false;
+
+const { users, totalProblems, totalPoints } = await getLeaderboard();
+const champion = users.find((u) => u.finished) ?? null;
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Grind 75 Leaderboard">
+  <section class="mb-8">
+    <h1 class="font-mono text-3xl font-bold text-ink">
+      The <span class="text-phosphor">Grind</span> Leaderboard
+    </h1>
+    <p class="mt-2 max-w-2xl text-muted">
+      {totalProblems} problems. {totalPoints.toLocaleString()} points up for grabs. Points = minutes ×
+      difficulty (easy ×1, medium ×2, hard ×3). First to clear them all wins — everyone after races for
+      second.
+    </p>
+    {
+      champion && (
+        <p class="mt-3 font-mono text-gold">
+          👑 @{champion.username} has finished all {totalProblems} problems.
+        </p>
+      )
+    }
+  </section>
+
+  {
+    users.length === 0 ? (
+      <div class="rounded-lg border border-dashed border-border bg-surface/40 p-10 text-center">
+        <p class="font-mono text-muted">No competitors yet.</p>
+        <a
+          href="/register"
+          class="mt-4 inline-block rounded border border-phosphor/40 px-4 py-2 font-mono text-phosphor hover:bg-phosphor/10"
+        >
+          Be the first →
+        </a>
+      </div>
+    ) : (
+      <div class="overflow-hidden rounded-lg border border-border bg-surface/40">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-border font-mono text-xs uppercase tracking-wider text-muted">
+              <th class="px-4 py-3">#</th>
+              <th class="px-4 py-3">Player</th>
+              <th class="px-4 py-3">Progress</th>
+              <th class="px-4 py-3 text-right">Solved</th>
+              <th class="px-4 py-3 text-right">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => {
+              const pct = totalProblems ? Math.round((u.solved / totalProblems) * 100) : 0;
+              return (
+                <tr class="border-b border-border/60 last:border-0 hover:bg-surface-2/50">
+                  <td class="px-4 py-3 tabular text-lg">
+                    {u.finished ? (
+                      <span class="text-gold">{ordinal(u.rank)}</span>
+                    ) : (
+                      <span class="text-muted">{u.rank}</span>
+                    )}
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="font-mono font-semibold text-ink">
+                      {u.finished && <span class="mr-1">👑</span>}@{u.username}
+                    </div>
+                    <a
+                      href={`https://leetcode.com/u/${u.leetcodeUsername}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-xs text-muted hover:text-phosphor"
+                    >
+                      leetcode.com/{u.leetcodeUsername}
+                    </a>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="h-2 w-40 overflow-hidden rounded-full bg-surface-2">
+                      <div
+                        class="h-full rounded-full bg-phosphor"
+                        style={`width:${pct}%`}
+                        aria-label={`${pct}% complete`}
+                      />
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-right tabular text-muted">
+                    {u.solved}/{totalProblems}
+                  </td>
+                  <td class="px-4 py-3 text-right tabular text-lg font-bold text-gold">
+                    {u.points.toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
 </Layout>
