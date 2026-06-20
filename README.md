@@ -34,38 +34,38 @@ See `src/lib/scoring.ts` (`rankUsers`) — pure and unit-tested.
 ## Project layout
 
 ```text
-db/schema.sql            # Postgres schema (idempotent)
-scripts/seed.mjs         # creates schema + seeds the 168 problems from ./problems
-src/lib/                 # db client, auth, validation, scoring/ranking, cached queries
-src/middleware.ts        # resolves the session user onto Astro.locals
-src/pages/               # index (leaderboard), login, register, dashboard
-src/pages/api/           # register, login, logout, toggle (mark solved)
+netlify/database/migrations/   # SQL migrations Netlify auto-applies (schema + 168-problem seed)
+src/lib/                        # db client, auth, validation, scoring/ranking, cached queries
+src/middleware.ts               # resolves the session user onto Astro.locals
+src/pages/                      # index (leaderboard), login, register, dashboard
+src/pages/api/                  # register, login, logout, toggle (mark solved)
 src/components/ProblemGrid.tsx  # React island for the dashboard
 ```
 
 ## Local development
 
-1. Provision a database (Netlify DB, or any Neon/Postgres instance).
-2. `cp .env.example .env` and set `NETLIFY_DATABASE_URL`.
-3. Install + seed + run:
+This project uses **Netlify DB** (managed Postgres). There is no connection string to copy — the
+`NETLIFY_DATABASE_URL` env var is injected automatically by `netlify dev` and in production, and the
+migrations in `netlify/database/migrations/` are applied for you.
 
 ```sh
 npm install
-npm run seed     # applies db/schema.sql and seeds the 168 problems
-npm run dev      # http://localhost:4321
+netlify dev      # starts a local Postgres, applies migrations, serves the app
 ```
 
-> Tip: with the Netlify CLI, `netlify dev` injects `NETLIFY_DATABASE_URL` automatically once the
-> DB is linked, so you can skip the manual `.env`.
+Verify migration state any time with `netlify database status`. To open a SQL REPL against the DB,
+use `netlify database connect`.
+
+> Running plain `npm run dev` works for static/markup changes but anything that touches the database
+> needs `netlify dev` so the connection is available.
 
 ## Commands
 
 | Command           | Action                                          |
 | :---------------- | :---------------------------------------------- |
-| `npm run dev`     | Local dev server at `localhost:4321`            |
+| `netlify dev`     | Local DB + migrations + app at `localhost:8888` |
 | `npm run build`   | Production build to `./dist/`                   |
 | `npm run preview` | Preview the build locally                       |
-| `npm run seed`    | Apply schema + seed problems (needs the DB URL) |
 | `npm run lint`    | ESLint + `astro check` (type-check)             |
 | `npm run format`  | Prettier write (`format:check` to verify)       |
 | `npm test`        | Vitest unit tests (`test:watch` for watch mode) |
@@ -73,8 +73,9 @@ npm run dev      # http://localhost:4321
 ## CI / CD
 
 - **CI** (`.github/workflows/ci.yml`): format check, lint + type-check, unit tests, build on every PR.
-- **CD**: Netlify builds and deploys from the repo (`netlify.toml`). Set `NETLIFY_DATABASE_URL` in
-  the Netlify site environment, and run the seed once against the production DB.
+- **CD**: Netlify builds and deploys from the repo (`netlify.toml`). The DB and `NETLIFY_DATABASE_URL`
+  are managed by Netlify, and pending migrations in `netlify/database/migrations/` are applied
+  automatically on each deploy — no manual seeding.
 
 ## Possible next steps
 

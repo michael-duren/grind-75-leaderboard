@@ -1,5 +1,5 @@
--- Grind 75 leaderboard schema (Postgres / Netlify DB).
--- Idempotent: safe to run repeatedly. Seeded by `npm run seed`.
+-- Grind 75 leaderboard schema.
+-- Netlify applies this automatically under `netlify dev` and on deploy.
 
 CREATE TABLE IF NOT EXISTS users (
   id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
