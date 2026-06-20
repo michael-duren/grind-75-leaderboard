@@ -64,14 +64,17 @@ const champion = users.find((u) => u.finished) ?? null;
                     )}
                   </td>
                   <td class="px-4 py-3">
-                    <div class="font-mono font-semibold text-ink">
+                    <a
+                      href={`/u/${u.username}`}
+                      class="font-mono font-semibold text-ink no-underline hover:text-phosphor"
+                    >
                       {u.finished && <span class="mr-1">👑</span>}@{u.username}
-                    </div>
+                    </a>
                     <a
                       href={`https://leetcode.com/u/${u.leetcodeUsername}/`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-xs text-muted hover:text-phosphor"
+                      class="block text-xs text-muted hover:text-phosphor"
                     >
                       leetcode.com/{u.leetcodeUsername}
                     </a>

@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { SITE, ISSUES_URL } from '../lib/site';
 
 interface Props {
   title?: string;
@@ -32,6 +33,7 @@ const user = Astro.locals.user;
         </a>
         <div class="flex items-center gap-5 font-mono text-sm">
           <a href="/">leaderboard</a>
+          <a href="/about">about</a>
           {
             user ? (
               <>
@@ -66,8 +68,53 @@ const user = Astro.locals.user;
       <slot />
     </main>
 
-    <footer class="mx-auto max-w-5xl px-5 py-10 font-mono text-xs text-muted">
-      <p>// first to clear all 168 problems takes the crown. proof required.</p>
+    <footer class="mt-12 border-t border-border">
+      <div
+        class="mx-auto flex max-w-5xl flex-col gap-6 px-5 py-8 font-mono text-sm sm:flex-row sm:justify-between"
+      >
+        <div>
+          <p class="text-ink">
+            grind<span class="text-gold">75</span> leaderboard
+          </p>
+          <p class="mt-1 text-xs text-muted">
+            // first to clear all 168 problems takes the crown. proof required.
+          </p>
+          <p class="mt-3 text-xs text-muted">
+            built by <a href={SITE.website} target="_blank" rel="noopener noreferrer"
+              >{SITE.author}</a
+            >
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-4 sm:flex-row sm:gap-12">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-muted">Connect</p>
+            <ul class="mt-2 space-y-1">
+              <li>
+                <a href={SITE.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+              </li>
+              <li>
+                <a href={SITE.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              </li>
+              <li>
+                <a href={SITE.website} target="_blank" rel="noopener noreferrer">Website</a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-muted">Found a bug?</p>
+            <ul class="mt-2 space-y-1">
+              <li>
+                <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">Submit an issue →</a>
+              </li>
+              <li>
+                <a href={SITE.repo} target="_blank" rel="noopener noreferrer">Source code</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </footer>
   </body>
 </html>

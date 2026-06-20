@@ -1,0 +1,135 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getLeaderboard, getUserProfile } from '../../lib/queries';
+import { ordinal, type Difficulty } from '../../lib/scoring';
+
+export const prerender = false;
+
+const { username } = Astro.params;
+const profile = username ? await getUserProfile(username) : null;
+
+if (!profile) {
+  Astro.response.status = 404;
+}
+
+// Pull rank/points/total from the (cached) leaderboard.
+const board = profile ? await getLeaderboard() : null;
+const entry = board?.users.find(
+  (u) => u.username.toLowerCase() === profile!.username.toLowerCase()
+);
+const totalProblems = board?.totalProblems ?? 0;
+
+const DIFF_STYLE: Record<Difficulty, string> = {
+  Easy: 'text-easy border-easy/40',
+  Medium: 'text-medium border-medium/40',
+  Hard: 'text-hard border-hard/40',
+};
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+---
+
+{
+  !profile ? (
+    <Layout title="User not found">
+      <div class="rounded-lg border border-dashed border-border bg-surface/40 p-10 text-center">
+        <p class="font-mono text-2xl text-ink">404</p>
+        <p class="mt-2 text-muted">No player named “{username}” exists.</p>
+        <a href="/" class="mt-4 inline-block font-mono text-phosphor">
+          ← back to the leaderboard
+        </a>
+      </div>
+    </Layout>
+  ) : (
+    <Layout title={`@${profile.username}`}>
+      <section class="mb-8">
+        <a href="/" class="font-mono text-xs text-muted hover:text-phosphor">
+          ← leaderboard
+        </a>
+        <div class="mt-3 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 class="font-mono text-3xl font-bold text-ink">
+              {entry?.finished && <span class="mr-1">👑</span>}@{profile.username}
+            </h1>
+            <a
+              href={`https://leetcode.com/u/${profile.leetcodeUsername}/`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-muted hover:text-phosphor"
+            >
+              leetcode.com/{profile.leetcodeUsername}
+            </a>
+          </div>
+          <div class="text-right">
+            <div class="tabular text-3xl font-bold text-gold">
+              {(entry?.points ?? 0).toLocaleString()}
+            </div>
+            <div class="font-mono text-xs text-muted">
+              {entry
+                ? entry.finished
+                  ? `${ordinal(entry.rank)} place`
+                  : `rank #${entry.rank}`
+                : '—'}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <div class="mb-1 flex justify-between font-mono text-xs text-muted">
+            <span>
+              {profile.solved.length} / {totalProblems} solved
+            </span>
+            <span>
+              {totalProblems ? Math.round((profile.solved.length / totalProblems) * 100) : 0}%
+            </span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-surface-2">
+            <div
+              class="h-full rounded-full bg-phosphor"
+              style={`width:${totalProblems ? (profile.solved.length / totalProblems) * 100 : 0}%`}
+            />
+          </div>
+        </div>
+      </section>
+
+      <h2 class="mb-3 font-mono text-lg font-bold text-phosphor">Solved problems</h2>
+      {profile.solved.length === 0 ? (
+        <p class="rounded-lg border border-dashed border-border bg-surface/40 p-8 text-center text-muted">
+          No problems solved yet.
+        </p>
+      ) : (
+        <ul class="space-y-2">
+          {profile.solved.map((p) => (
+            <li class="flex items-center gap-3 rounded-lg border border-border bg-surface/40 p-3">
+              <span
+                class={`shrink-0 rounded border px-2 py-0.5 font-mono text-xs ${DIFF_STYLE[p.difficulty]}`}
+              >
+                {p.difficulty[0]}
+              </span>
+              <a
+                href={`https://leetcode.com/problems/${p.slug}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-1 truncate font-medium text-ink hover:text-phosphor"
+              >
+                {p.title}
+              </a>
+              <span class="hidden shrink-0 font-mono text-xs text-muted sm:inline">
+                {fmtDate(p.solvedAt)}
+              </span>
+              <span class="shrink-0 font-mono text-xs text-gold tabular">+{p.points}</span>
+              <a
+                href={p.submissionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="shrink-0 rounded border border-border px-2 py-1 font-mono text-xs text-muted hover:border-phosphor/50 hover:text-phosphor"
+              >
+                proof
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Layout>
+  )
+}
