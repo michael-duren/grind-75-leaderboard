@@ -1,5 +1,7 @@
 # Grind 75 Leaderboard
 
+[![CI](https://github.com/michael-duren/grind-75-leaderboard/actions/workflows/ci.yml/badge.svg)](https://github.com/michael-duren/grind-75-leaderboard/actions/workflows/ci.yml)
+
 A two-page site where friends race through the [Grind 75](https://www.techinterviewhandbook.org/grind75) problem set
 (168 problems). Sign up, link your LeetCode account, and mark problems solved by pasting a
 submission link as proof. First to clear every problem wins; everyone after races for second.
