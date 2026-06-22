@@ -38,7 +38,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       ON CONFLICT (user_id, problem_id)
       DO UPDATE SET submission_url = EXCLUDED.submission_url, solved_at = now()
     `;
+    // Append to the history log. Marking solved again (e.g. a clean re-solve
+    // after reviewing) keeps the older attempts around.
+    await sql`
+      INSERT INTO submissions (user_id, problem_id, submission_url)
+      VALUES (${user.id}, ${problemId}, ${url})
+    `;
   } else {
+    // Un-solving discards the solve record and its history — submissions only
+    // exist for problems you've actually marked solved.
+    await sql`
+      DELETE FROM submissions
+      WHERE user_id = ${user.id} AND problem_id = ${problemId}
+    `;
     await sql`
       DELETE FROM user_problems
       WHERE user_id = ${user.id} AND problem_id = ${problemId}

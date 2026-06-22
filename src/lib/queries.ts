@@ -74,6 +74,11 @@ export async function getLeaderboard(): Promise<LeaderboardData> {
   });
 }
 
+export interface SubmissionEntry {
+  url: string;
+  createdAt: string;
+}
+
 export interface ProblemRow {
   id: number;
   slug: string;
@@ -84,6 +89,9 @@ export interface ProblemRow {
   orderIndex: number;
   solved: boolean;
   submissionUrl: string | null;
+  needsReview: boolean;
+  /** Every submission logged for this problem, newest first. */
+  submissions: SubmissionEntry[];
 }
 
 /** All problems with this user's solve status, ordered for the dashboard grid. */
@@ -96,7 +104,8 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
            p.minutes,
            p.points,
            p.order_index,
-           up.submission_url
+           up.submission_url,
+           COALESCE(up.needs_review, false) AS needs_review
     FROM problems p
     LEFT JOIN user_problems up
       ON up.problem_id = p.id AND up.user_id = ${userId}
@@ -110,7 +119,22 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
     points: number;
     order_index: number;
     submission_url: string | null;
+    needs_review: boolean;
   }>;
+
+  const subRows = (await sql`
+    SELECT problem_id, submission_url, created_at
+    FROM submissions
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+  `) as Array<{ problem_id: number; submission_url: string; created_at: string }>;
+
+  const byProblem = new Map<number, SubmissionEntry[]>();
+  for (const s of subRows) {
+    const list = byProblem.get(s.problem_id) ?? [];
+    list.push({ url: s.submission_url, createdAt: s.created_at });
+    byProblem.set(s.problem_id, list);
+  }
 
   return rows.map((r) => ({
     id: r.id,
@@ -122,6 +146,8 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
     orderIndex: r.order_index,
     solved: r.submission_url !== null,
     submissionUrl: r.submission_url,
+    needsReview: r.needs_review,
+    submissions: byProblem.get(r.id) ?? [],
   }));
 }
 
