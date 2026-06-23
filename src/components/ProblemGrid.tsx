@@ -52,10 +52,7 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const solvedCount = useMemo(() => items.filter((p) => p.solved).length, [items]);
-  const reviewCount = useMemo(
-    () => items.filter((p) => p.solved && p.needsReview).length,
-    [items]
-  );
+  const reviewCount = useMemo(() => items.filter((p) => p.solved && p.needsReview).length, [items]);
   const earned = useMemo(
     () => items.reduce((sum, p) => (p.solved ? sum + p.points : sum), 0),
     [items]
@@ -112,7 +109,13 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
           if (p.id !== id) return p;
           if (!solved) {
             // Un-solve clears the proof, the history, and the review flag.
-            return { ...p, solved: false, submissionUrl: null, needsReview: false, submissions: [] };
+            return {
+              ...p,
+              solved: false,
+              submissionUrl: null,
+              needsReview: false,
+              submissions: [],
+            };
           }
           const url = submissionUrl ?? p.submissionUrl;
           const submissions = submissionUrl
@@ -229,11 +232,7 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
           <li
             key={p.id}
             className={`rounded-lg border bg-surface/40 p-3 ${
-              p.needsReview
-                ? 'border-gold/40'
-                : p.solved
-                  ? 'border-phosphor/30'
-                  : 'border-border'
+              p.needsReview ? 'border-gold/40' : p.solved ? 'border-phosphor/30' : 'border-border'
             }`}
           >
             <div className="flex items-center gap-3">
