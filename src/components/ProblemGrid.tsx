@@ -25,6 +25,9 @@ interface Props {
 }
 
 type Filter = 'all' | 'todo' | 'done' | 'review';
+type DifficultyFilter = 'all' | Difficulty;
+
+const DIFFICULTIES: Difficulty[] = ['Easy', 'Medium', 'Hard'];
 
 const DIFF_STYLE: Record<Difficulty, string> = {
   Easy: 'text-easy border-easy/40',
@@ -48,6 +51,7 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
   const [busy, setBusy] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [filter, setFilter] = useState<Filter>('all');
+  const [difficulty, setDifficulty] = useState<DifficultyFilter>('all');
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
@@ -65,10 +69,11 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
       if (filter === 'todo' && p.solved) return false;
       if (filter === 'done' && !p.solved) return false;
       if (filter === 'review' && !(p.solved && p.needsReview)) return false;
+      if (difficulty !== 'all' && p.difficulty !== difficulty) return false;
       if (q && !p.title.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [items, filter, query]);
+  }, [items, filter, difficulty, query]);
 
   function setError(id: number, msg: string) {
     setErrors((e) => ({ ...e, [id]: msg }));
@@ -213,6 +218,18 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
             </button>
           ))}
         </div>
+        <select
+          value={difficulty}
+          onChange={(e) => setDifficulty(e.target.value as DifficultyFilter)}
+          className="rounded border border-border bg-surface px-3 py-1.5 font-mono text-xs text-ink outline-none focus:border-phosphor"
+        >
+          <option value="all">all difficulty</option>
+          {DIFFICULTIES.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
