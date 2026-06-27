@@ -46,6 +46,7 @@ const user = Astro.locals.user;
             user ? (
               <>
                 <a href="/dashboard">my progress</a>
+                <a href="/settings">settings</a>
                 <span class="text-muted">@{user.username}</span>
                 <form method="POST" action="/api/logout" class="inline">
                   <button

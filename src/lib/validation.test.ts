@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  validateHoursPerWeek,
   validateLeetcodeUsername,
   validatePassword,
+  validatePlanWeeks,
   validateSubmissionUrl,
   validateUsername,
 } from './validation';
@@ -40,5 +42,31 @@ describe('validateSubmissionUrl', () => {
     expect(validateSubmissionUrl('https://example.com/problems/x')).toBeNull();
     expect(validateSubmissionUrl('https://leetcode.com/contest/foo')).toBeNull();
     expect(validateSubmissionUrl('not a url')).toBeNull();
+  });
+});
+
+describe('validatePlanWeeks', () => {
+  it('accepts whole weeks in range', () => {
+    expect(validatePlanWeeks('2')).toBe(2);
+    expect(validatePlanWeeks(52)).toBe(52);
+  });
+  it('rejects out-of-range, fractional, and non-numeric', () => {
+    expect(validatePlanWeeks('0')).toBeNull();
+    expect(validatePlanWeeks('53')).toBeNull();
+    expect(validatePlanWeeks('1.5')).toBeNull();
+    expect(validatePlanWeeks('soon')).toBeNull();
+  });
+});
+
+describe('validateHoursPerWeek', () => {
+  it('accepts whole hours in range', () => {
+    expect(validateHoursPerWeek('32')).toBe(32);
+    expect(validateHoursPerWeek(168)).toBe(168);
+  });
+  it('rejects out-of-range, fractional, and non-numeric', () => {
+    expect(validateHoursPerWeek('0')).toBeNull();
+    expect(validateHoursPerWeek('169')).toBeNull();
+    expect(validateHoursPerWeek('8.5')).toBeNull();
+    expect(validateHoursPerWeek('lots')).toBeNull();
   });
 });

@@ -2,7 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import ProblemGrid from '../components/ProblemGrid.tsx';
 import ConsistencyPanel from '../components/ConsistencyPanel.tsx';
-import { getLeaderboard, getProblemsForUser } from '../lib/queries';
+import { getProblemsForUser, getUserSettings } from '../lib/queries';
+import { computePace, shownDifficulties } from '../lib/schedule';
 
 export const prerender = false;
 
@@ -11,15 +12,45 @@ if (!user) {
   return Astro.redirect('/login');
 }
 
-const [problems, { totalPoints }] = await Promise.all([
+const [problems, settings] = await Promise.all([
   getProblemsForUser(user.id),
-  getLeaderboard(),
+  getUserSettings(user.id),
 ]);
 
-// Metrics inputs — derived here so "now" is fixed once on the server (avoids an
-// SSR/hydration mismatch in the client:load panel). Activity = every logged
-// submission; a solve's date is its most recent proof.
+// Difficulty is a "which to show" setting: scope the grid to the chosen levels.
+// With no saved plan yet, show everything and prompt the user to set one up.
+const allowed = settings ? new Set(shownDifficulties(settings)) : null;
+const shown = allowed ? problems.filter((p) => allowed.has(p.difficulty)) : problems;
+const scopePoints = shown.reduce((sum, p) => sum + p.points, 0);
+
+// Pace target, derived from the plan + how far through it we are. "now" is fixed
+// once on the server so the numbers match what the (server-rendered) banner shows.
 const now = Date.now();
+const pace =
+  settings && shown.length
+    ? computePace({
+        weeks: settings.weeks,
+        hoursPerWeek: settings.hoursPerWeek,
+        startedAt: Date.parse(settings.startedAt),
+        now,
+        totalInScope: shown.length,
+        pointsInScope: scopePoints,
+        workloadMinutes: shown.reduce((sum, p) => sum + p.minutes, 0),
+        solvedInScope: shown.filter((p) => p.solved).length,
+      })
+    : null;
+
+const deadlineLabel = pace
+  ? new Date(pace.deadline).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  : null;
+
+// Metrics inputs — derived here so "now" is fixed once on the server (avoids an
+// SSR/hydration mismatch in the client:load panel). Readiness spans every
+// problem, so these use the full list, not the difficulty-scoped one.
 const activity = problems
   .flatMap((p) => p.submissions.map((s) => Date.parse(s.createdAt)))
   .filter((t) => Number.isFinite(t));
@@ -33,13 +64,67 @@ const solves = problems
 ---
 
 <Layout title="My Progress">
-  <section class="mb-2">
-    <h1 class="font-mono text-2xl font-bold text-ink">My Progress</h1>
-    <p class="mt-1 text-sm text-muted">
-      Solve a problem, paste the submission link as proof, mark it done. Peeked at the answer? Flag
-      it ★ and find it again under the review tab.
-    </p>
+  <section class="mb-2 flex items-start justify-between gap-4">
+    <div>
+      <h1 class="font-mono text-2xl font-bold text-ink">My Progress</h1>
+      <p class="mt-1 text-sm text-muted">
+        Solve a problem, paste the submission link as proof, mark it done. Peeked at the answer?
+        Flag it ★ and find it again under the review tab.
+      </p>
+    </div>
+    <a
+      href="/settings"
+      class="shrink-0 rounded border border-border px-3 py-1.5 font-mono text-xs text-muted hover:border-phosphor hover:text-phosphor"
+    >
+      ⚙ plan
+    </a>
   </section>
+
+  {
+    pace ? (
+      <section class="mb-6 rounded-lg border border-border bg-surface/40 p-4 font-mono text-xs">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <span class="text-muted">
+            {settings!.weeks}-week plan · {settings!.hoursPerWeek}h/week ·{' '}
+            <span class="text-ink">{pace.budgetedHours}h budgeted</span>
+          </span>
+          <span class={pace.overdue ? 'text-hard' : 'text-muted'}>
+            {pace.overdue
+              ? `overdue · was due ${deadlineLabel}`
+              : `due ${deadlineLabel} · ${pace.daysRemaining}d left`}
+          </span>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span class="text-muted">
+            target by today:{' '}
+            <span class="text-ink tabular">
+              {pace.targetSolved}/{shown.length}
+            </span>{' '}
+            solved
+          </span>
+          {pace.onTrack ? (
+            <span class="text-phosphor">✓ on track</span>
+          ) : (
+            <span class="text-gold">behind by {pace.problemsBehind}</span>
+          )}
+        </div>
+        {!pace.feasible && (
+          <p class="mt-2 text-gold">
+            ⚠ ~{Math.round(pace.workloadHours)}h of problems in scope but only {pace.budgetedHours}h
+            budgeted — consider more hours/week or fewer weeks.
+          </p>
+        )}
+      </section>
+    ) : (
+      <section class="mb-6 rounded-lg border border-border bg-surface/40 p-4 font-mono text-xs text-muted">
+        No study plan yet.{' '}
+        <a href="/settings" class="text-phosphor">
+          Set a schedule
+        </a>{' '}
+        to track your pace and pick which difficulties to show.
+      </section>
+    )
+  }
 
   <ConsistencyPanel
     client:load
@@ -49,5 +134,5 @@ const solves = problems
     now={now}
   />
 
-  <ProblemGrid client:load problems={problems} totalPoints={totalPoints} />
+  <ProblemGrid client:load problems={shown} totalPoints={scopePoints} />
 </Layout>

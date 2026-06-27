@@ -20,6 +20,18 @@ export function validatePassword(value: unknown): string | null {
   return value.length >= 8 && value.length <= 200 ? value : null;
 }
 
+/** Whole number of weeks for a study plan (1–52). */
+export function validatePlanWeeks(value: unknown): number | null {
+  const n = typeof value === 'string' || typeof value === 'number' ? Number(value) : NaN;
+  return Number.isInteger(n) && n >= 1 && n <= 52 ? n : null;
+}
+
+/** Whole hours-per-week for a study plan (1–168, i.e. up to a full week). */
+export function validateHoursPerWeek(value: unknown): number | null {
+  const n = typeof value === 'string' || typeof value === 'number' ? Number(value) : NaN;
+  return Number.isInteger(n) && n >= 1 && n <= 168 ? n : null;
+}
+
 /** Accept only real LeetCode submission links so the "proof" means something. */
 export function validateSubmissionUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;

@@ -1,0 +1,181 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getProblemDifficultyCounts, getUserSettings } from '../lib/queries';
+import { DEFAULT_HOURS_PER_WEEK, DEFAULT_WEEKS } from '../lib/schedule';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+const [settings, counts] = await Promise.all([
+  getUserSettings(user.id),
+  getProblemDifficultyCounts(),
+]);
+
+// Fall back to sensible defaults so the form is pre-filled for first-time users.
+const weeks = settings?.weeks ?? DEFAULT_WEEKS;
+const hoursPerWeek = settings?.hoursPerWeek ?? DEFAULT_HOURS_PER_WEEK;
+const showEasy = settings?.showEasy ?? true;
+const showMedium = settings?.showMedium ?? true;
+const showHard = settings?.showHard ?? true;
+
+// Seed values for the live preview; the inline script recomputes them as the
+// form changes. Total = problems across the chosen difficulties (all by
+// default); finish = today + the planned weeks.
+const initialTotal =
+  (showEasy ? counts.Easy : 0) + (showMedium ? counts.Medium : 0) + (showHard ? counts.Hard : 0);
+const initialFinish = new Date(Date.now() + weeks * 7 * 86_400_000).toLocaleDateString(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
+
+const error = Astro.url.searchParams.get('error');
+const message =
+  error === 'invalid'
+    ? 'Check your schedule: weeks 1–52, hours per week 1–168.'
+    : error === 'nodiff'
+      ? 'Pick at least one difficulty to show.'
+      : null;
+
+const DIFFICULTIES = [
+  { name: 'show_easy', label: 'Easy', checked: showEasy, cls: 'text-easy border-easy/40' },
+  {
+    name: 'show_medium',
+    label: 'Medium',
+    checked: showMedium,
+    cls: 'text-medium border-medium/40',
+  },
+  { name: 'show_hard', label: 'Hard', checked: showHard, cls: 'text-hard border-hard/40' },
+];
+---
+
+<Layout title="Settings">
+  <div class="mx-auto max-w-md">
+    <h1 class="font-mono text-2xl font-bold text-ink">Study plan</h1>
+    <p class="mt-1 text-sm text-muted">
+      Set your schedule and which problems to show. Your progress view updates to match.
+    </p>
+
+    {
+      message && (
+        <p class="mt-4 rounded border border-hard/40 bg-hard/10 px-3 py-2 font-mono text-sm text-hard">
+          {message}
+        </p>
+      )
+    }
+
+    <form method="POST" action="/api/settings" class="mt-6 space-y-6">
+      <fieldset>
+        <legend class="font-mono text-xs uppercase tracking-wider text-muted">Schedule</legend>
+        <div class="mt-3 grid grid-cols-2 gap-4">
+          <label class="block">
+            <span class="font-mono text-xs text-muted">Weeks</span>
+            <input
+              name="weeks"
+              type="number"
+              required
+              min="1"
+              max="52"
+              value={weeks}
+              class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+            />
+          </label>
+          <label class="block">
+            <span class="font-mono text-xs text-muted">Hours / week</span>
+            <input
+              name="hours_per_week"
+              type="number"
+              required
+              min="1"
+              max="168"
+              value={hoursPerWeek}
+              class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+            />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="font-mono text-xs uppercase tracking-wider text-muted">Difficulty</legend>
+        <p class="mt-1 text-xs text-muted">
+          Only the difficulties you pick show up in your progress view.
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          {
+            DIFFICULTIES.map((d) => (
+              <label
+                class={`flex cursor-pointer items-center gap-2 rounded border bg-surface/40 px-3 py-2 font-mono text-sm ${d.cls}`}
+              >
+                <input name={d.name} type="checkbox" checked={d.checked} class="accent-phosphor" />
+                {d.label}
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+
+      <div
+        id="plan-preview"
+        data-counts={JSON.stringify(counts)}
+        class="rounded-lg border border-border bg-surface/40 p-4 font-mono text-xs"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <span class="text-muted">
+            you'll do <span id="preview-total" class="text-ink tabular">{initialTotal}</span> problems
+          </span>
+          <span class="text-muted">
+            finish by <span id="preview-date" class="text-phosphor">{initialFinish}</span>
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full cursor-pointer rounded border border-phosphor/50 bg-phosphor/10 px-4 py-2 font-mono font-semibold text-phosphor hover:bg-phosphor/20"
+      >
+        Save plan →
+      </button>
+    </form>
+
+    <script>
+      // Live-update the finish date + total problem count as the plan changes.
+      const form = document.querySelector<HTMLFormElement>('form[action="/api/settings"]');
+      const preview = document.getElementById('plan-preview');
+      const totalEl = document.getElementById('preview-total');
+      const dateEl = document.getElementById('preview-date');
+
+      if (form && preview && totalEl && dateEl) {
+        const counts = JSON.parse(preview.dataset.counts ?? '{}') as Record<string, number>;
+        const checked = (name: string) =>
+          (form.elements.namedItem(name) as HTMLInputElement | null)?.checked ?? false;
+
+        const update = () => {
+          const weeks = Number((form.elements.namedItem('weeks') as HTMLInputElement)?.value) || 0;
+          const total =
+            (checked('show_easy') ? (counts.Easy ?? 0) : 0) +
+            (checked('show_medium') ? (counts.Medium ?? 0) : 0) +
+            (checked('show_hard') ? (counts.Hard ?? 0) : 0);
+          const finish = new Date(Date.now() + weeks * 7 * 86_400_000);
+          totalEl.textContent = String(total);
+          dateEl.textContent = finish.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+        };
+
+        form.addEventListener('input', update);
+        form.addEventListener('change', update);
+        update();
+      }
+    </script>
+
+    <p class="mt-6 text-center text-sm text-muted">
+      <a href="/dashboard">← Back to my progress</a>
+    </p>
+  </div>
+</Layout>

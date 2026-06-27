@@ -151,6 +151,87 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
   }));
 }
 
+export interface UserSettingsRow {
+  weeks: number;
+  hoursPerWeek: number;
+  showEasy: boolean;
+  showMedium: boolean;
+  showHard: boolean;
+  /** ISO string the current plan started from. */
+  startedAt: string;
+}
+
+/** A user's saved study plan, or null if they haven't set one up yet. */
+export async function getUserSettings(userId: number): Promise<UserSettingsRow | null> {
+  const rows = (await sql`
+    SELECT weeks, hours_per_week, show_easy, show_medium, show_hard, started_at
+    FROM user_settings
+    WHERE user_id = ${userId}
+  `) as Array<{
+    weeks: number;
+    hours_per_week: number;
+    show_easy: boolean;
+    show_medium: boolean;
+    show_hard: boolean;
+    started_at: string;
+  }>;
+
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    weeks: r.weeks,
+    hoursPerWeek: r.hours_per_week,
+    showEasy: r.show_easy,
+    showMedium: r.show_medium,
+    showHard: r.show_hard,
+    startedAt: r.started_at,
+  };
+}
+
+export interface UserSettingsInput {
+  weeks: number;
+  hoursPerWeek: number;
+  showEasy: boolean;
+  showMedium: boolean;
+  showHard: boolean;
+}
+
+/**
+ * Create or update a user's plan. `started_at` is reset to now() on every save
+ * so editing the plan restarts the countdown (see migration 0004 for why).
+ */
+export async function upsertUserSettings(userId: number, s: UserSettingsInput): Promise<void> {
+  await sql`
+    INSERT INTO user_settings
+      (user_id, weeks, hours_per_week, show_easy, show_medium, show_hard, started_at, updated_at)
+    VALUES
+      (${userId}, ${s.weeks}, ${s.hoursPerWeek}, ${s.showEasy}, ${s.showMedium}, ${s.showHard}, now(), now())
+    ON CONFLICT (user_id) DO UPDATE SET
+      weeks = EXCLUDED.weeks,
+      hours_per_week = EXCLUDED.hours_per_week,
+      show_easy = EXCLUDED.show_easy,
+      show_medium = EXCLUDED.show_medium,
+      show_hard = EXCLUDED.show_hard,
+      started_at = now(),
+      updated_at = now()
+  `;
+}
+
+export type DifficultyCounts = Record<Difficulty, number>;
+
+/** How many problems exist at each difficulty — drives the settings preview. */
+export async function getProblemDifficultyCounts(): Promise<DifficultyCounts> {
+  const rows = (await sql`
+    SELECT difficulty, COUNT(*)::int AS n
+    FROM problems
+    GROUP BY difficulty
+  `) as Array<{ difficulty: Difficulty; n: number }>;
+
+  const counts: DifficultyCounts = { Easy: 0, Medium: 0, Hard: 0 };
+  for (const r of rows) counts[r.difficulty] = r.n;
+  return counts;
+}
+
 export interface SolvedProblem {
   title: string;
   slug: string;

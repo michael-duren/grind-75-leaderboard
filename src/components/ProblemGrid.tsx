@@ -55,6 +55,13 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
+  // Only offer difficulties present in the (already plan-scoped) list, so the
+  // dropdown never lists a level that's been hidden by the user's settings.
+  const availableDifficulties = useMemo(
+    () => DIFFICULTIES.filter((d) => items.some((p) => p.difficulty === d)),
+    [items]
+  );
+
   const solvedCount = useMemo(() => items.filter((p) => p.solved).length, [items]);
   const reviewCount = useMemo(() => items.filter((p) => p.solved && p.needsReview).length, [items]);
   const earned = useMemo(
@@ -224,7 +231,7 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
           className="rounded border border-border bg-surface px-3 py-1.5 font-mono text-xs text-ink outline-none focus:border-phosphor"
         >
           <option value="all">all difficulty</option>
-          {DIFFICULTIES.map((d) => (
+          {availableDifficulties.map((d) => (
             <option key={d} value={d}>
               {d}
             </option>
