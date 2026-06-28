@@ -3,7 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import ProblemGrid from '../components/ProblemGrid.tsx';
 import ConsistencyPanel from '../components/ConsistencyPanel.tsx';
 import { getProblemsForUser, getUserSettings } from '../lib/queries';
-import { computePace, shownDifficulties } from '../lib/schedule';
+import { computePace, selectPlan } from '../lib/schedule';
+import { planRank } from '../lib/grind75-order';
 
 export const prerender = false;
 
@@ -17,10 +18,11 @@ const [problems, settings] = await Promise.all([
   getUserSettings(user.id),
 ]);
 
-// Difficulty is a "which to show" setting: scope the grid to the chosen levels.
-// With no saved plan yet, show everything and prompt the user to set one up.
-const allowed = settings ? new Set(shownDifficulties(settings)) : null;
-const shown = allowed ? problems.filter((p) => allowed.has(p.difficulty)) : problems;
+// The plan is the problems that fit your time budget, in priority order — the
+// least-essential ones are trimmed first. With no saved plan yet, show
+// everything (still priority-ordered) and prompt the user to set one up.
+const ordered = [...problems].sort((a, b) => planRank(a.slug) - planRank(b.slug));
+const shown = settings ? selectPlan(ordered, settings) : ordered;
 const scopePoints = shown.reduce((sum, p) => sum + p.points, 0);
 
 // Pace target, derived from the plan + how far through it we are. "now" is fixed
@@ -108,12 +110,6 @@ const solves = problems
             <span class="text-gold">behind by {pace.problemsBehind}</span>
           )}
         </div>
-        {!pace.feasible && (
-          <p class="mt-2 text-gold">
-            ⚠ ~{Math.round(pace.workloadHours)}h of problems in scope but only {pace.budgetedHours}h
-            budgeted — consider more hours/week or fewer weeks.
-          </p>
-        )}
       </section>
     ) : (
       <section class="mb-6 rounded-lg border border-border bg-surface/40 p-4 font-mono text-xs text-muted">

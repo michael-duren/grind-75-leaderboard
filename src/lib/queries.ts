@@ -1,5 +1,6 @@
 import { sql } from './db';
 import { rankUsers, type RankableUser, type RankedUser, type Difficulty } from './scoring';
+import { planRank } from './grind75-order';
 
 /**
  * Tiny in-process cache. The leaderboard is read on every homepage hit but
@@ -217,19 +218,25 @@ export async function upsertUserSettings(userId: number, s: UserSettingsInput): 
   `;
 }
 
-export type DifficultyCounts = Record<Difficulty, number>;
+export interface PlanCandidateRow {
+  difficulty: Difficulty;
+  minutes: number;
+}
 
-/** How many problems exist at each difficulty — drives the settings preview. */
-export async function getProblemDifficultyCounts(): Promise<DifficultyCounts> {
+/**
+ * Every problem's difficulty + minutes, sorted into plan-priority order
+ * (most-essential first). Drives the settings preview, where the plan is
+ * trimmed to whatever fits the time budget.
+ */
+export async function getPlanCandidates(): Promise<PlanCandidateRow[]> {
   const rows = (await sql`
-    SELECT difficulty, COUNT(*)::int AS n
+    SELECT slug, difficulty, minutes
     FROM problems
-    GROUP BY difficulty
-  `) as Array<{ difficulty: Difficulty; n: number }>;
+  `) as Array<{ slug: string; difficulty: Difficulty; minutes: number }>;
 
-  const counts: DifficultyCounts = { Easy: 0, Medium: 0, Hard: 0 };
-  for (const r of rows) counts[r.difficulty] = r.n;
-  return counts;
+  return rows
+    .sort((a, b) => planRank(a.slug) - planRank(b.slug))
+    .map((r) => ({ difficulty: r.difficulty, minutes: r.minutes }));
 }
 
 export interface SolvedProblem {

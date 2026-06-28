@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getProblemDifficultyCounts, getUserSettings } from '../lib/queries';
-import { DEFAULT_HOURS_PER_WEEK, DEFAULT_WEEKS } from '../lib/schedule';
+import { getPlanCandidates, getUserSettings } from '../lib/queries';
+import { DEFAULT_HOURS_PER_WEEK, DEFAULT_WEEKS, selectPlan } from '../lib/schedule';
 
 export const prerender = false;
 
@@ -10,10 +10,7 @@ if (!user) {
   return Astro.redirect('/login');
 }
 
-const [settings, counts] = await Promise.all([
-  getUserSettings(user.id),
-  getProblemDifficultyCounts(),
-]);
+const [settings, candidates] = await Promise.all([getUserSettings(user.id), getPlanCandidates()]);
 
 // Fall back to sensible defaults so the form is pre-filled for first-time users.
 const weeks = settings?.weeks ?? DEFAULT_WEEKS;
@@ -23,15 +20,23 @@ const showMedium = settings?.showMedium ?? true;
 const showHard = settings?.showHard ?? true;
 
 // Seed values for the live preview; the inline script recomputes them as the
-// form changes. Total = problems across the chosen difficulties (all by
-// default); finish = today + the planned weeks.
-const initialTotal =
-  (showEasy ? counts.Easy : 0) + (showMedium ? counts.Medium : 0) + (showHard ? counts.Hard : 0);
+// form changes. Total = problems that fit the time budget (weeks × hours/week),
+// trimmed from the least-essential end; finish = today + the planned weeks.
+const initialTotal = selectPlan(candidates, {
+  weeks,
+  hoursPerWeek,
+  showEasy,
+  showMedium,
+  showHard,
+}).length;
 const initialFinish = new Date(Date.now() + weeks * 7 * 86_400_000).toLocaleDateString(undefined, {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
 });
+
+// Compact candidate list for the client: priority order, [difficulty, minutes].
+const candidatesJson = JSON.stringify(candidates.map((c) => [c.difficulty, c.minutes]));
 
 const error = Astro.url.searchParams.get('error');
 const message =
@@ -71,29 +76,33 @@ const DIFFICULTIES = [
     <form method="POST" action="/api/settings" class="mt-6 space-y-6">
       <fieldset>
         <legend class="font-mono text-xs uppercase tracking-wider text-muted">Schedule</legend>
-        <div class="mt-3 grid grid-cols-2 gap-4">
+        <div class="mt-3 space-y-5">
           <label class="block">
-            <span class="font-mono text-xs text-muted">Weeks</span>
+            <span class="flex items-center justify-between font-mono text-xs text-muted">
+              <span>Weeks</span>
+              <span id="weeks-value" class="text-ink tabular">{weeks}</span>
+            </span>
             <input
               name="weeks"
-              type="number"
-              required
+              type="range"
               min="1"
               max="52"
               value={weeks}
-              class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+              class="mt-2 w-full cursor-pointer accent-phosphor"
             />
           </label>
           <label class="block">
-            <span class="font-mono text-xs text-muted">Hours / week</span>
+            <span class="flex items-center justify-between font-mono text-xs text-muted">
+              <span>Hours / week</span>
+              <span id="hours-value" class="text-ink tabular">{hoursPerWeek}</span>
+            </span>
             <input
               name="hours_per_week"
-              type="number"
-              required
+              type="range"
               min="1"
               max="168"
               value={hoursPerWeek}
-              class="mt-1 w-full rounded border border-border bg-surface px-3 py-2 font-mono text-ink outline-none focus:border-phosphor"
+              class="mt-2 w-full cursor-pointer accent-phosphor"
             />
           </label>
         </div>
@@ -120,7 +129,7 @@ const DIFFICULTIES = [
 
       <div
         id="plan-preview"
-        data-counts={JSON.stringify(counts)}
+        data-candidates={candidatesJson}
         class="rounded-lg border border-border bg-surface/40 p-4 font-mono text-xs"
       >
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -131,6 +140,9 @@ const DIFFICULTIES = [
             finish by <span id="preview-date" class="text-phosphor">{initialFinish}</span>
           </span>
         </div>
+        <p class="mt-2 text-muted">
+          Fewer hours trims the least-essential problems first, keeping the core.
+        </p>
       </div>
 
       <button
@@ -147,18 +159,40 @@ const DIFFICULTIES = [
       const preview = document.getElementById('plan-preview');
       const totalEl = document.getElementById('preview-total');
       const dateEl = document.getElementById('preview-date');
+      const weeksValueEl = document.getElementById('weeks-value');
+      const hoursValueEl = document.getElementById('hours-value');
 
       if (form && preview && totalEl && dateEl) {
-        const counts = JSON.parse(preview.dataset.counts ?? '{}') as Record<string, number>;
+        // [difficulty, minutes] in priority order, most-essential first.
+        const candidates = JSON.parse(preview.dataset.candidates ?? '[]') as [string, number][];
+        const num = (name: string) =>
+          Number((form.elements.namedItem(name) as HTMLInputElement | null)?.value) || 0;
         const checked = (name: string) =>
           (form.elements.namedItem(name) as HTMLInputElement | null)?.checked ?? false;
 
         const update = () => {
-          const weeks = Number((form.elements.namedItem('weeks') as HTMLInputElement)?.value) || 0;
-          const total =
-            (checked('show_easy') ? (counts.Easy ?? 0) : 0) +
-            (checked('show_medium') ? (counts.Medium ?? 0) : 0) +
-            (checked('show_hard') ? (counts.Hard ?? 0) : 0);
+          const weeks = num('weeks');
+          const hoursPerWeek = num('hours_per_week');
+          if (weeksValueEl) weeksValueEl.textContent = String(weeks);
+          if (hoursValueEl) hoursValueEl.textContent = String(hoursPerWeek);
+
+          const budget = weeks * hoursPerWeek * 60;
+          const shown = new Set<string>();
+          if (checked('show_easy')) shown.add('Easy');
+          if (checked('show_medium')) shown.add('Medium');
+          if (checked('show_hard')) shown.add('Hard');
+
+          // Mirror selectPlan: keep the leading run of shown problems that fits
+          // the budget, stopping at the first that would overflow.
+          let used = 0;
+          let total = 0;
+          for (const [diff, minutes] of candidates) {
+            if (!shown.has(diff)) continue;
+            if (used + minutes > budget) break;
+            used += minutes;
+            total += 1;
+          }
+
           const finish = new Date(Date.now() + weeks * 7 * 86_400_000);
           totalEl.textContent = String(total);
           dateEl.textContent = finish.toLocaleDateString(undefined, {

@@ -15,9 +15,12 @@ import type { Difficulty } from './scoring';
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
 
-/** Sensible defaults for a brand-new plan (mirror the SQL column defaults). */
+/**
+ * Sensible defaults for a brand-new plan. 8 × 10 = 80h budget, comfortably above
+ * the ~76h of all problems, so a fresh plan includes the whole set by default.
+ */
 export const DEFAULT_WEEKS = 8;
-export const DEFAULT_HOURS_PER_WEEK = 8;
+export const DEFAULT_HOURS_PER_WEEK = 10;
 
 export interface UserSettings {
   weeks: number;
@@ -39,6 +42,46 @@ export function shownDifficulties(s: {
   if (s.showEasy) out.push('Easy');
   if (s.showMedium) out.push('Medium');
   if (s.showHard) out.push('Hard');
+  return out;
+}
+
+/** Total study minutes a plan budgets. */
+export function budgetMinutes(weeks: number, hoursPerWeek: number): number {
+  return weeks * hoursPerWeek * 60;
+}
+
+export interface PlanCandidate {
+  difficulty: Difficulty;
+  minutes: number;
+}
+
+/**
+ * Pick the problems a plan includes. Walk the candidates in priority order (the
+ * caller pre-sorts most-essential first), keep each one whose difficulty is
+ * shown while the running time stays within budget, and stop at the first that
+ * would overflow — i.e. drop the least-essential tail until the rest fit. More
+ * weeks/hours → more kept; fewer → it shrinks toward the essential core.
+ */
+export function selectPlan<T extends PlanCandidate>(
+  ordered: readonly T[],
+  settings: {
+    weeks: number;
+    hoursPerWeek: number;
+    showEasy: boolean;
+    showMedium: boolean;
+    showHard: boolean;
+  }
+): T[] {
+  const shown = new Set(shownDifficulties(settings));
+  const budget = budgetMinutes(settings.weeks, settings.hoursPerWeek);
+  const out: T[] = [];
+  let used = 0;
+  for (const c of ordered) {
+    if (!shown.has(c.difficulty)) continue;
+    if (used + c.minutes > budget) break;
+    used += c.minutes;
+    out.push(c);
+  }
   return out;
 }
 
