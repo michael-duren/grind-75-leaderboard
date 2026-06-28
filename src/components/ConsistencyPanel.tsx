@@ -31,7 +31,15 @@ function scoreColor(score: number): string {
   return 'text-hard';
 }
 
-function Panel({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Panel({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-lg border border-border bg-surface/40 p-4">
       <div className="flex items-baseline justify-between">
