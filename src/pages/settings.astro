@@ -41,7 +41,7 @@ const candidatesJson = JSON.stringify(candidates.map((c) => [c.difficulty, c.min
 const error = Astro.url.searchParams.get('error');
 const message =
   error === 'invalid'
-    ? 'Check your schedule: weeks 1–52, hours per week 1–168.'
+    ? 'Check your schedule: weeks 1–52, hours per week 1–40.'
     : error === 'nodiff'
       ? 'Pick at least one difficulty to show.'
       : null;
@@ -100,7 +100,7 @@ const DIFFICULTIES = [
               name="hours_per_week"
               type="range"
               min="1"
-              max="168"
+              max="40"
               value={hoursPerWeek}
               class="mt-2 w-full cursor-pointer accent-phosphor"
             />

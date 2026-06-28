@@ -61,11 +61,11 @@ describe('validatePlanWeeks', () => {
 describe('validateHoursPerWeek', () => {
   it('accepts whole hours in range', () => {
     expect(validateHoursPerWeek('32')).toBe(32);
-    expect(validateHoursPerWeek(168)).toBe(168);
+    expect(validateHoursPerWeek(40)).toBe(40);
   });
   it('rejects out-of-range, fractional, and non-numeric', () => {
     expect(validateHoursPerWeek('0')).toBeNull();
-    expect(validateHoursPerWeek('169')).toBeNull();
+    expect(validateHoursPerWeek('41')).toBeNull();
     expect(validateHoursPerWeek('8.5')).toBeNull();
     expect(validateHoursPerWeek('lots')).toBeNull();
   });

@@ -26,10 +26,10 @@ export function validatePlanWeeks(value: unknown): number | null {
   return Number.isInteger(n) && n >= 1 && n <= 52 ? n : null;
 }
 
-/** Whole hours-per-week for a study plan (1–168, i.e. up to a full week). */
+/** Whole hours-per-week for a study plan (1–40 — a realistic weekly ceiling). */
 export function validateHoursPerWeek(value: unknown): number | null {
   const n = typeof value === 'string' || typeof value === 'number' ? Number(value) : NaN;
-  return Number.isInteger(n) && n >= 1 && n <= 168 ? n : null;
+  return Number.isInteger(n) && n >= 1 && n <= 40 ? n : null;
 }
 
 /** Accept only real LeetCode submission links so the "proof" means something. */
