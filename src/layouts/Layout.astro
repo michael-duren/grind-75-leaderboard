@@ -69,6 +69,29 @@ const user = Astro.locals.user;
               </>
             )
           }
+          {
+            user && (
+              <button
+                id="link-preference-toggle"
+                type="button"
+                aria-label="Preferred problem-link site"
+                title="Switch preferred problem-link site"
+                data-preference={user.linkPreference}
+                class="flex cursor-pointer items-center gap-1 rounded border border-border bg-surface/40 p-1"
+              >
+                <img
+                  src="/LeetCode_logo_darkmode.png"
+                  alt="LeetCode"
+                  class={`h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                />
+                <img
+                  src="/neetcode-io-logo.png"
+                  alt="NeetCode"
+                  class={`h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'neetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                />
+              </button>
+            )
+          }
           <button
             id="theme-toggle"
             type="button"
@@ -142,6 +165,18 @@ const user = Astro.locals.user;
         const next = root.dataset.theme === 'light' ? 'dark' : 'light';
         root.dataset.theme = next;
         localStorage.setItem('theme', next);
+      });
+
+      const linkToggle = document.getElementById('link-preference-toggle');
+      linkToggle?.addEventListener('click', async () => {
+        const current = linkToggle.dataset.preference === 'neetcode' ? 'neetcode' : 'leetcode';
+        const next = current === 'leetcode' ? 'neetcode' : 'leetcode';
+        const res = await fetch('/api/link-preference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ preference: next }),
+        });
+        if (res.ok) location.reload();
       });
     </script>
   </body>

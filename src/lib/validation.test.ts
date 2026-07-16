@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   validateHoursPerWeek,
   validateLeetcodeUsername,
+  validateLinkPreference,
   validatePassword,
   validatePlanWeeks,
   validateSubmissionUrl,
@@ -72,5 +73,17 @@ describe('validateHoursPerWeek', () => {
     expect(validateHoursPerWeek('41')).toBeNull();
     expect(validateHoursPerWeek('8.5')).toBeNull();
     expect(validateHoursPerWeek('lots')).toBeNull();
+  });
+});
+
+describe('validateLinkPreference', () => {
+  it('accepts leetcode or neetcode', () => {
+    expect(validateLinkPreference('leetcode')).toBe('leetcode');
+    expect(validateLinkPreference('neetcode')).toBe('neetcode');
+  });
+  it('rejects anything else', () => {
+    expect(validateLinkPreference('other')).toBeNull();
+    expect(validateLinkPreference(undefined)).toBeNull();
+    expect(validateLinkPreference(1)).toBeNull();
   });
 });

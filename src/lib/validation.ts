@@ -32,6 +32,11 @@ export function validateHoursPerWeek(value: unknown): number | null {
   return Number.isInteger(n) && n >= 1 && n <= 40 ? n : null;
 }
 
+/** Which site's problem link a user prefers to see as primary. */
+export function validateLinkPreference(value: unknown): 'leetcode' | 'neetcode' | null {
+  return value === 'leetcode' || value === 'neetcode' ? value : null;
+}
+
 /** Accept only real LeetCode or NeetCode submission links so the "proof" means something. */
 export function validateSubmissionUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;

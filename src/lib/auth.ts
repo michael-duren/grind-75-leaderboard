@@ -12,6 +12,7 @@ export interface SessionUser {
   id: number;
   username: string;
   leetcodeUsername: string;
+  linkPreference: 'leetcode' | 'neetcode';
 }
 
 /**
@@ -49,15 +50,25 @@ export async function createSession(userId: number): Promise<string> {
 export async function getSessionUser(token: string | undefined): Promise<SessionUser | null> {
   if (!token) return null;
   const rows = (await sql`
-    SELECT u.id, u.username, u.leetcode_username
+    SELECT u.id, u.username, u.leetcode_username, u.link_preference
     FROM sessions s
     JOIN users u ON u.id = s.user_id
     WHERE s.token = ${token} AND s.expires_at > now()
-  `) as Array<{ id: number; username: string; leetcode_username: string }>;
+  `) as Array<{
+    id: number;
+    username: string;
+    leetcode_username: string;
+    link_preference: 'leetcode' | 'neetcode';
+  }>;
 
   const row = rows[0];
   if (!row) return null;
-  return { id: row.id, username: row.username, leetcodeUsername: row.leetcode_username };
+  return {
+    id: row.id,
+    username: row.username,
+    leetcodeUsername: row.leetcode_username,
+    linkPreference: row.link_preference,
+  };
 }
 
 /** Delete a session (logout). */
