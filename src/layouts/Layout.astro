@@ -82,7 +82,12 @@ const user = Astro.locals.user;
                 <img
                   src="/LeetCode_logo_darkmode.png"
                   alt="LeetCode"
-                  class={`h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                  class={`leetcode-logo-dark h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                />
+                <img
+                  src="/LeetCode_logo_lightmode.png"
+                  alt="LeetCode"
+                  class={`leetcode-logo-light h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
                 />
                 <img
                   src="/neetcode-io-logo.png"

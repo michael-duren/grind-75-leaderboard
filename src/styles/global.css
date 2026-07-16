@@ -106,3 +106,11 @@ html[data-theme='dark'] .icon-sun {
 html[data-theme='light'] .icon-moon {
   display: inline;
 }
+
+/* LeetCode logo has separate light/dark assets; show the one matching theme. */
+html[data-theme='dark'] .leetcode-logo-light {
+  display: none;
+}
+html[data-theme='light'] .leetcode-logo-dark {
+  display: none;
+}
