@@ -5,7 +5,7 @@ export function leetcodeUrl(slug: string): string {
 }
 
 export function neetcodeUrl(neetcodeSlug: string): string {
-  return `https://neetcode.io/problems/${neetcodeSlug}`;
+  return `https://neetcode.io/problems/${neetcodeSlug}/question`;
 }
 
 /**
