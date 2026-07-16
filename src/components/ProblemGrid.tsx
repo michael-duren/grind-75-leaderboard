@@ -337,7 +337,11 @@ export default function ProblemGrid({ problems, totalPoints, preference }: Props
                 <input
                   value={drafts[p.id] ?? ''}
                   onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
-                  placeholder="https://leetcode.com/problems/…/submissions/…"
+                  placeholder={
+                    preference === 'leetcode'
+                      ? 'https://leetcode.com/problems/…/submissions/…'
+                      : 'https://neetcode.io/problems/…/history?submissionIndex=…'
+                  }
                   className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 font-mono text-xs text-ink outline-none focus:border-phosphor"
                 />
                 <button
