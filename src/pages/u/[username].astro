@@ -107,7 +107,9 @@ const fmtDate = (iso: string) =>
                 {p.difficulty[0]}
               </span>
               <a
-                href={`https://leetcode.com/problems/${p.slug}/`}
+                href={p.neetcodeSlug
+                  ? `https://neetcode.io/problems/${p.neetcodeSlug}`
+                  : `https://leetcode.com/problems/${p.slug}/`}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex-1 truncate font-medium text-ink hover:text-phosphor"

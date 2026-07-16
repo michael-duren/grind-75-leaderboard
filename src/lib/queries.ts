@@ -91,6 +91,8 @@ export interface ProblemRow {
   solved: boolean;
   submissionUrl: string | null;
   needsReview: boolean;
+  /** NeetCode's equivalent slug, or null if no NeetCode page exists for this problem. */
+  neetcodeSlug: string | null;
   /** Every submission logged for this problem, newest first. */
   submissions: SubmissionEntry[];
 }
@@ -105,6 +107,7 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
            p.minutes,
            p.points,
            p.order_index,
+           p.neetcode_slug,
            up.submission_url,
            COALESCE(up.needs_review, false) AS needs_review
     FROM problems p
@@ -119,6 +122,7 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
     minutes: number;
     points: number;
     order_index: number;
+    neetcode_slug: string | null;
     submission_url: string | null;
     needs_review: boolean;
   }>;
@@ -148,6 +152,7 @@ export async function getProblemsForUser(userId: number): Promise<ProblemRow[]> 
     solved: r.submission_url !== null,
     submissionUrl: r.submission_url,
     needsReview: r.needs_review,
+    neetcodeSlug: r.neetcode_slug,
     submissions: byProblem.get(r.id) ?? [],
   }));
 }
@@ -246,6 +251,7 @@ export interface SolvedProblem {
   points: number;
   submissionUrl: string;
   solvedAt: string;
+  neetcodeSlug: string | null;
 }
 
 export interface UserProfile {
@@ -274,7 +280,7 @@ export async function getUserProfile(username: string): Promise<UserProfile | nu
   if (!user) return null;
 
   const solvedRows = (await sql`
-    SELECT p.title, p.slug, p.difficulty, p.points, up.submission_url, up.solved_at
+    SELECT p.title, p.slug, p.difficulty, p.points, p.neetcode_slug, up.submission_url, up.solved_at
     FROM user_problems up
     JOIN problems p ON p.id = up.problem_id
     WHERE up.user_id = ${user.id}
@@ -284,6 +290,7 @@ export async function getUserProfile(username: string): Promise<UserProfile | nu
     slug: string;
     difficulty: Difficulty;
     points: number;
+    neetcode_slug: string | null;
     submission_url: string;
     solved_at: string;
   }>;
@@ -298,6 +305,7 @@ export async function getUserProfile(username: string): Promise<UserProfile | nu
       slug: r.slug,
       difficulty: r.difficulty,
       points: r.points,
+      neetcodeSlug: r.neetcode_slug,
       submissionUrl: r.submission_url,
       solvedAt: r.solved_at,
     })),

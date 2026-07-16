@@ -32,15 +32,18 @@ export function validateHoursPerWeek(value: unknown): number | null {
   return Number.isInteger(n) && n >= 1 && n <= 40 ? n : null;
 }
 
-/** Accept only real LeetCode submission links so the "proof" means something. */
+/** Accept only real LeetCode or NeetCode submission links so the "proof" means something. */
 export function validateSubmissionUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const v = value.trim();
   try {
     const url = new URL(v);
     const host = url.hostname.replace(/^www\./, '');
-    if (host !== 'leetcode.com' && !host.endsWith('.leetcode.com')) return null;
-    // Expect a problem/submission path, e.g. /problems/two-sum/submissions/12345
+    const isLeetcode = host === 'leetcode.com' || host.endsWith('.leetcode.com');
+    const isNeetcode = host === 'neetcode.io' || host.endsWith('.neetcode.io');
+    if (!isLeetcode && !isNeetcode) return null;
+    // Expect a problem path, e.g. /problems/two-sum/submissions/12345 (LeetCode)
+    // or /problems/two-sum/history?submissionIndex=3 (NeetCode).
     if (!url.pathname.includes('/problems/')) return null;
     return v;
   } catch {

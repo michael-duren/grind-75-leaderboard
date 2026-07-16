@@ -16,7 +16,14 @@ export interface ProblemItem {
   solved: boolean;
   submissionUrl: string | null;
   needsReview: boolean;
+  neetcodeSlug: string | null;
   submissions: SubmissionEntry[];
+}
+
+function problemUrl(p: Pick<ProblemItem, 'slug' | 'neetcodeSlug'>): string {
+  return p.neetcodeSlug
+    ? `https://neetcode.io/problems/${p.neetcodeSlug}`
+    : `https://leetcode.com/problems/${p.slug}/`;
 }
 
 interface Props {
@@ -267,7 +274,7 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
                 {p.difficulty[0]}
               </span>
               <a
-                href={`https://leetcode.com/problems/${p.slug}/`}
+                href={problemUrl(p)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex-1 truncate font-medium ${p.solved ? 'text-muted line-through' : 'text-ink'}`}

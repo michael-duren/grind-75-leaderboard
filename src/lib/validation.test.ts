@@ -38,6 +38,10 @@ describe('validateSubmissionUrl', () => {
     const url = 'https://leetcode.com/problems/valid-anagram/submissions/2039155008';
     expect(validateSubmissionUrl(url)).toBe(url);
   });
+  it('accepts real neetcode submission links', () => {
+    const url = 'https://neetcode.io/problems/string-encode-and-decode/history?submissionIndex=3';
+    expect(validateSubmissionUrl(url)).toBe(url);
+  });
   it('rejects non-leetcode or non-problem urls', () => {
     expect(validateSubmissionUrl('https://example.com/problems/x')).toBeNull();
     expect(validateSubmissionUrl('https://leetcode.com/contest/foo')).toBeNull();
