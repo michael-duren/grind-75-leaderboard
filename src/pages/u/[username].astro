@@ -2,6 +2,7 @@
 import Layout from '../../layouts/Layout.astro';
 import { getLeaderboard, getUserProfile } from '../../lib/queries';
 import { ordinal, type Difficulty } from '../../lib/scoring';
+import { leetcodeUrl, neetcodeUrl, primaryProblemUrl } from '../../lib/links';
 
 export const prerender = false;
 
@@ -107,13 +108,42 @@ const fmtDate = (iso: string) =>
                 {p.difficulty[0]}
               </span>
               <a
-                href={`https://leetcode.com/problems/${p.slug}/`}
+                href={primaryProblemUrl(p, profile.linkPreference)}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex-1 truncate font-medium text-ink hover:text-phosphor"
               >
                 {p.title}
               </a>
+              <a
+                href={leetcodeUrl(p.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View on LeetCode"
+                class="shrink-0 opacity-70 hover:opacity-100"
+              >
+                <img
+                  src="/LeetCode_logo_darkmode.png"
+                  alt="LeetCode"
+                  class="leetcode-logo-dark h-4 w-4"
+                />
+                <img
+                  src="/LeetCode_logo_lightmode.png"
+                  alt="LeetCode"
+                  class="leetcode-logo-light h-4 w-4"
+                />
+              </a>
+              {p.neetcodeSlug && (
+                <a
+                  href={neetcodeUrl(p.neetcodeSlug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="View on NeetCode"
+                  class="shrink-0 opacity-70 hover:opacity-100"
+                >
+                  <img src="/neetcode-io-logo.png" alt="NeetCode" class="h-4 w-4" />
+                </a>
+              )}
               <span class="hidden shrink-0 font-mono text-xs text-muted sm:inline">
                 {fmtDate(p.solvedAt)}
               </span>

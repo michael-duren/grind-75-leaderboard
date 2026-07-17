@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Difficulty } from '../lib/scoring';
+import { leetcodeUrl, neetcodeUrl, primaryProblemUrl } from '../lib/links';
 
 export interface SubmissionEntry {
   url: string;
@@ -16,12 +17,14 @@ export interface ProblemItem {
   solved: boolean;
   submissionUrl: string | null;
   needsReview: boolean;
+  neetcodeSlug: string | null;
   submissions: SubmissionEntry[];
 }
 
 interface Props {
   problems: ProblemItem[];
   totalPoints: number;
+  preference: 'leetcode' | 'neetcode';
 }
 
 type Filter = 'all' | 'todo' | 'done' | 'review';
@@ -45,7 +48,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function ProblemGrid({ problems, totalPoints }: Props) {
+export default function ProblemGrid({ problems, totalPoints, preference }: Props) {
   const [items, setItems] = useState<ProblemItem[]>(problems);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
@@ -267,13 +270,42 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
                 {p.difficulty[0]}
               </span>
               <a
-                href={`https://leetcode.com/problems/${p.slug}/`}
+                href={primaryProblemUrl(p, preference)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex-1 truncate font-medium ${p.solved ? 'text-muted line-through' : 'text-ink'}`}
               >
                 {p.title}
               </a>
+              <a
+                href={leetcodeUrl(p.slug)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View on LeetCode"
+                className="shrink-0 opacity-70 hover:opacity-100"
+              >
+                <img
+                  src="/LeetCode_logo_darkmode.png"
+                  alt="LeetCode logo dark mode"
+                  className="leetcode-logo-dark h-4 w-4"
+                />
+                <img
+                  src="/LeetCode_logo_lightmode.png"
+                  alt="LeetCode logo light mode"
+                  className="leetcode-logo-light h-4 w-4"
+                />
+              </a>
+              {p.neetcodeSlug && (
+                <a
+                  href={neetcodeUrl(p.neetcodeSlug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="View on NeetCode"
+                  className="shrink-0 opacity-70 hover:opacity-100"
+                >
+                  <img src="/neetcode-io-logo.png" alt="NeetCode logo" className="h-4 w-4" />
+                </a>
+              )}
               <span className="shrink-0 font-mono text-xs text-gold tabular">+{p.points}</span>
               {p.solved && (
                 <button
@@ -305,7 +337,11 @@ export default function ProblemGrid({ problems, totalPoints }: Props) {
                 <input
                   value={drafts[p.id] ?? ''}
                   onChange={(e) => setDrafts((d) => ({ ...d, [p.id]: e.target.value }))}
-                  placeholder="https://leetcode.com/problems/…/submissions/…"
+                  placeholder={
+                    preference === 'leetcode'
+                      ? 'https://leetcode.com/problems/…/submissions/…'
+                      : 'https://neetcode.io/problems/…/history?submissionIndex=…'
+                  }
                   className="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 font-mono text-xs text-ink outline-none focus:border-phosphor"
                 />
                 <button

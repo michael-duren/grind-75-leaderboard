@@ -20,7 +20,10 @@ const steps = [
   {
     n: 3,
     title: 'Submit proof',
-    body: 'On the LeetCode submission page, copy the URL (it looks like leetcode.com/problems/two-sum/submissions/123…) and paste it next to the problem on your dashboard.',
+    body: `Copy the URL of your accepted submission 
+    leetcode.com/problems/two-sum/submissions/123… OR 
+    neetcode.io/problems/two-sum/history?submissionIndex=… 
+and paste it next to the problem on your dashboard.`,
   },
   {
     n: 4,
@@ -52,7 +55,9 @@ const steps = [
               </span>
               <h3 class="font-mono font-semibold text-ink">{s.title}</h3>
             </div>
-            <p class="mt-2 text-sm text-muted">{s.body}</p>
+            <p class="mt-2 text-sm text-muted" style="white-space: pre-wrap;">
+              {s.body}
+            </p>
           </li>
         ))
       }

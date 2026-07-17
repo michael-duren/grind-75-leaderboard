@@ -130,5 +130,10 @@ const solves = problems
     now={now}
   />
 
-  <ProblemGrid client:load problems={shown} totalPoints={scopePoints} />
+  <ProblemGrid
+    client:load
+    problems={shown}
+    totalPoints={scopePoints}
+    preference={user.linkPreference}
+  />
 </Layout>

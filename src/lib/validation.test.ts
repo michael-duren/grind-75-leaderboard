@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   validateHoursPerWeek,
   validateLeetcodeUsername,
+  validateLinkPreference,
   validatePassword,
   validatePlanWeeks,
   validateSubmissionUrl,
@@ -38,6 +39,10 @@ describe('validateSubmissionUrl', () => {
     const url = 'https://leetcode.com/problems/valid-anagram/submissions/2039155008';
     expect(validateSubmissionUrl(url)).toBe(url);
   });
+  it('accepts real neetcode submission links', () => {
+    const url = 'https://neetcode.io/problems/string-encode-and-decode/history?submissionIndex=3';
+    expect(validateSubmissionUrl(url)).toBe(url);
+  });
   it('rejects non-leetcode or non-problem urls', () => {
     expect(validateSubmissionUrl('https://example.com/problems/x')).toBeNull();
     expect(validateSubmissionUrl('https://leetcode.com/contest/foo')).toBeNull();
@@ -68,5 +73,17 @@ describe('validateHoursPerWeek', () => {
     expect(validateHoursPerWeek('41')).toBeNull();
     expect(validateHoursPerWeek('8.5')).toBeNull();
     expect(validateHoursPerWeek('lots')).toBeNull();
+  });
+});
+
+describe('validateLinkPreference', () => {
+  it('accepts leetcode or neetcode', () => {
+    expect(validateLinkPreference('leetcode')).toBe('leetcode');
+    expect(validateLinkPreference('neetcode')).toBe('neetcode');
+  });
+  it('rejects anything else', () => {
+    expect(validateLinkPreference('other')).toBeNull();
+    expect(validateLinkPreference(undefined)).toBeNull();
+    expect(validateLinkPreference(1)).toBeNull();
   });
 });
