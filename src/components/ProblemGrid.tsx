@@ -286,12 +286,12 @@ export default function ProblemGrid({ problems, totalPoints, preference }: Props
               >
                 <img
                   src="/LeetCode_logo_darkmode.png"
-                  alt="LeetCode"
+                  alt="LeetCode logo dark mode"
                   className="leetcode-logo-dark h-4 w-4"
                 />
                 <img
                   src="/LeetCode_logo_lightmode.png"
-                  alt="LeetCode"
+                  alt="LeetCode logo light mode"
                   className="leetcode-logo-light h-4 w-4"
                 />
               </a>
@@ -303,7 +303,7 @@ export default function ProblemGrid({ problems, totalPoints, preference }: Props
                   title="View on NeetCode"
                   className="shrink-0 opacity-70 hover:opacity-100"
                 >
-                  <img src="/neetcode-io-logo.png" alt="NeetCode" className="h-4 w-4" />
+                  <img src="/neetcode-io-logo.png" alt="NeetCode logo" className="h-4 w-4" />
                 </a>
               )}
               <span className="shrink-0 font-mono text-xs text-gold tabular">+{p.points}</span>

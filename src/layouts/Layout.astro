@@ -75,24 +75,24 @@ const user = Astro.locals.user;
                 id="link-preference-toggle"
                 type="button"
                 aria-label="Preferred problem-link site"
-                title="Switch preferred problem-link site"
+                title={`Default to ${user.linkPreference === 'neetcode' ? 'Leetcode' : 'Neetcode'}`}
                 data-preference={user.linkPreference}
-                class="flex cursor-pointer items-center gap-1 rounded border border-border bg-surface/40 p-1"
+                class="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border bg-surface/40 p-1"
               >
                 <img
                   src="/LeetCode_logo_darkmode.png"
                   alt="LeetCode"
-                  class={`leetcode-logo-dark h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                  class={`leetcode-logo-dark h-6 w-6 shrink-0 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
                 />
                 <img
                   src="/LeetCode_logo_lightmode.png"
                   alt="LeetCode"
-                  class={`leetcode-logo-light h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                  class={`leetcode-logo-light h-6 w-6 shrink-0 rounded-sm p-0.5 ${user.linkPreference === 'leetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
                 />
                 <img
                   src="/neetcode-io-logo.png"
                   alt="NeetCode"
-                  class={`h-4 w-4 rounded-sm p-0.5 ${user.linkPreference === 'neetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
+                  class={`h-6 w-6 shrink-0 rounded-sm p-0.5 ${user.linkPreference === 'neetcode' ? 'bg-phosphor/20' : 'opacity-40'}`}
                 />
               </button>
             )
